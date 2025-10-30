@@ -377,20 +377,29 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Calendar</h2>
+      <div className="flex justify-between items-center bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Calendar</h2>
+          <p className="text-sm text-gray-500">{events.length} events this month</p>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowNewEvent(true)}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all font-medium flex items-center gap-2"
           >
-            + New Event
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Event
           </button>
           <button
             onClick={() => setShowNewCalendar(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all font-medium flex items-center gap-2"
           >
-            + New Calendar
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Calendar
           </button>
         </div>
       </div>
@@ -398,35 +407,47 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sidebar - Calendars */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="font-semibold mb-3">My Calendars</h3>
+          <div className="bg-white rounded-xl shadow-md p-5 border border-gray-200">
+            <h3 className="font-bold text-lg mb-4 text-gray-800 flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              My Calendars
+            </h3>
             <div className="space-y-2">
               {calendars.map((calendar) => (
-                <div key={calendar.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded">
+                <div key={calendar.id} className="flex items-center gap-2 p-2.5 hover:bg-gray-50 rounded-lg transition-colors group">
                   <input
                     type="checkbox"
                     checked={calendar.isVisible}
                     onChange={() => toggleCalendarVisibility(calendar.id, calendar.isVisible)}
-                    className="w-4 h-4"
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
                   />
                   <div
-                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    className="w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-white shadow-sm"
                     style={{ backgroundColor: calendar.color }}
                   />
-                  <span className="flex-1 text-sm truncate">{calendar.name}</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="flex-1 text-sm font-medium text-gray-700 truncate">{calendar.name}</span>
+                  <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-600 font-medium">
                     {calendar._count?.events || 0}
                   </span>
                   <button
                     onClick={() => deleteCalendar(calendar.id)}
-                    className="text-red-500 hover:text-red-700 text-xs"
+                    className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition-all"
                   >
-                    ×
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </div>
               ))}
               {calendars.length === 0 && (
-                <p className="text-sm text-gray-500">No calendars yet</p>
+                <div className="text-center py-8">
+                  <svg className="w-12 h-12 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-sm text-gray-500">No calendars yet</p>
+                </div>
               )}
             </div>
           </div>
@@ -434,60 +455,64 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
 
         {/* Main Calendar View */}
         <div className="lg:col-span-3">
-          <div className="bg-white rounded-lg shadow">
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
             {/* Calendar Header */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between p-5 border-b bg-gradient-to-r from-gray-50 to-white">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={goToPrevious}
-                  className="px-3 py-1 hover:bg-gray-100 rounded font-bold"
+                  className="p-2 hover:bg-white rounded-lg font-bold text-gray-700 hover:text-blue-600 transition-all shadow-sm hover:shadow"
                 >
-                  ←
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
                 </button>
-                <h3 className="text-xl font-semibold min-w-[240px] text-center">
+                <h3 className="text-xl font-bold min-w-[240px] text-center text-gray-800">
                   {getCurrentViewTitle()}
                 </h3>
                 <button
                   onClick={goToNext}
-                  className="px-3 py-1 hover:bg-gray-100 rounded font-bold"
+                  className="p-2 hover:bg-white rounded-lg font-bold text-gray-700 hover:text-blue-600 transition-all shadow-sm hover:shadow"
                 >
-                  →
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <button
                   onClick={goToToday}
-                  className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded font-medium"
+                  className="px-4 py-2 text-sm bg-white hover:bg-blue-50 rounded-lg font-medium text-gray-700 hover:text-blue-600 border border-gray-200 transition-all shadow-sm"
                 >
                   Today
                 </button>
-                <div className="flex gap-1 ml-4 border rounded-lg overflow-hidden">
+                <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
                   <button
                     onClick={() => setViewMode('month')}
-                    className={`px-3 py-1 text-sm font-medium ${
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
                       viewMode === 'month'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     Month
                   </button>
                   <button
                     onClick={() => setViewMode('week')}
-                    className={`px-3 py-1 text-sm font-medium ${
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
                       viewMode === 'week'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     Week
                   </button>
                   <button
                     onClick={() => setViewMode('day')}
-                    className={`px-3 py-1 text-sm font-medium ${
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
                       viewMode === 'day'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     Day
