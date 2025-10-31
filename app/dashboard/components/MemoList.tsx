@@ -83,7 +83,7 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
 
       if (res.ok) {
         const memo = await res.json()
-        setMemos([memo, ...memos])
+        setMemos(prevMemos => [memo, ...prevMemos])
         setNewMemo({ title: '', content: '' })
         setShowNewMemo(false)
       }
@@ -102,7 +102,7 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
 
       if (res.ok) {
         const updatedMemo = await res.json()
-        setMemos(memos.map(m => m.id === id ? updatedMemo : m))
+        setMemos(prevMemos => prevMemos.map(m => m.id === id ? updatedMemo : m))
         setEditingMemo(null)
       }
     } catch (error) {
@@ -119,7 +119,12 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
       })
 
       if (res.ok) {
-        setMemos(memos.filter(m => m.id !== id))
+        // 편집 모드 리셋
+        if (editingMemo === id) {
+          setEditingMemo(null)
+        }
+        // 함수형 업데이트로 최신 상태 보장
+        setMemos(prevMemos => prevMemos.filter(m => m.id !== id))
       }
     } catch (error) {
       console.error('Failed to delete memo:', error)

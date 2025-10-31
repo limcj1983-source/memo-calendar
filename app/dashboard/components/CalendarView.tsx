@@ -131,7 +131,7 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
 
       if (res.ok) {
         const calendar = await res.json()
-        setCalendars([...calendars, calendar])
+        setCalendars(prevCalendars => [...prevCalendars, calendar])
         setNewCalendar({
           name: '',
           description: '',
@@ -155,7 +155,7 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
 
       if (res.ok) {
         const updated = await res.json()
-        setCalendars(calendars.map(c => c.id === calendarId ? updated : c))
+        setCalendars(prevCalendars => prevCalendars.map(c => c.id === calendarId ? updated : c))
       }
     } catch (error) {
       console.error('Failed to toggle calendar:', error)
@@ -171,8 +171,8 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
       })
 
       if (res.ok) {
-        setCalendars(calendars.filter(c => c.id !== calendarId))
-        setEvents(events.filter(e => e.calendar.id !== calendarId))
+        setCalendars(prevCalendars => prevCalendars.filter(c => c.id !== calendarId))
+        setEvents(prevEvents => prevEvents.filter(e => e.calendar.id !== calendarId))
       }
     } catch (error) {
       console.error('Failed to delete calendar:', error)
@@ -191,7 +191,7 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
 
       if (res.ok) {
         const event = await res.json()
-        setEvents([...events, event])
+        setEvents(prevEvents => [...prevEvents, event])
         setNewEvent({
           title: '',
           description: '',
@@ -216,7 +216,7 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
       })
 
       if (res.ok) {
-        setEvents(events.filter(e => e.id !== eventId))
+        setEvents(prevEvents => prevEvents.filter(e => e.id !== eventId))
         setSelectedEvent(null)
       }
     } catch (error) {
@@ -236,7 +236,7 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
 
       if (res.ok) {
         const updated = await res.json()
-        setEvents(events.map(e => e.id === selectedEvent.id ? updated : e))
+        setEvents(prevEvents => prevEvents.map(e => e.id === selectedEvent.id ? updated : e))
         setSelectedEvent(null)
         setIsEditingEvent(false)
       }
