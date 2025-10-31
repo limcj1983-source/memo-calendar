@@ -43,13 +43,12 @@ function parseKoreanDate(text: string): ExtractedDate[] {
     })
   }
 
-  // Helper function to create date with KST timezone
-  const createKSTDate = (baseDate: Date, hour: number, minute: number): Date => {
+  // Helper function to create date with local time (no timezone conversion)
+  const createLocalDate = (baseDate: Date, hour: number, minute: number): Date => {
     const year = baseDate.getFullYear()
-    const month = baseDate.getMonth() + 1
+    const month = baseDate.getMonth()
     const day = baseDate.getDate()
-    const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00+09:00`
-    return new Date(dateString)
+    return new Date(year, month, day, hour, minute, 0, 0)
   }
 
   // 내일
@@ -58,7 +57,7 @@ function parseKoreanDate(text: string): ExtractedDate[] {
   if (tomorrowMatches.length > 0) {
     const tomorrow = new Date(now)
     tomorrow.setDate(tomorrow.getDate() + 1)
-    const tomorrowDate = createKSTDate(tomorrow, hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0)
+    const tomorrowDate = createLocalDate(tomorrow, hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0)
 
     results.push({
       text: '내일' + (hasTime ? ' ' + timeMatches[0][0] : ''),
@@ -73,7 +72,7 @@ function parseKoreanDate(text: string): ExtractedDate[] {
   if (dayAfterMatches.length > 0) {
     const dayAfter = new Date(now)
     dayAfter.setDate(dayAfter.getDate() + 2)
-    const dayAfterDate = createKSTDate(dayAfter, hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0)
+    const dayAfterDate = createLocalDate(dayAfter, hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0)
 
     results.push({
       text: '모레' + (hasTime ? ' ' + timeMatches[0][0] : ''),
@@ -89,11 +88,11 @@ function parseKoreanDate(text: string): ExtractedDate[] {
     const days = parseInt(match[1])
     const futureDate = new Date(now)
     futureDate.setDate(futureDate.getDate() + days)
-    const futureDateKST = createKSTDate(futureDate, hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0)
+    const futureDateLocal = createLocalDate(futureDate, hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0)
 
     results.push({
       text: match[0],
-      startDate: futureDateKST,
+      startDate: futureDateLocal,
       index: match.index!
     })
   }
@@ -112,11 +111,11 @@ function parseKoreanDate(text: string): ExtractedDate[] {
 
     const nextWeekDate = new Date(now)
     nextWeekDate.setDate(nextWeekDate.getDate() + daysToAdd)
-    const nextWeekDateKST = createKSTDate(nextWeekDate, hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0)
+    const nextWeekDateLocal = createLocalDate(nextWeekDate, hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0)
 
     results.push({
       text: match[0],
-      startDate: nextWeekDateKST,
+      startDate: nextWeekDateLocal,
       index: match.index!
     })
   }
@@ -125,22 +124,21 @@ function parseKoreanDate(text: string): ExtractedDate[] {
   const monthDayPattern = /(\d{1,2})월\s?(\d{1,2})일/g
   const monthDayMatches = Array.from(text.matchAll(monthDayPattern))
   for (const match of monthDayMatches) {
-    const month = parseInt(match[1])
+    const month = parseInt(match[1]) - 1 // JavaScript months are 0-indexed
     const day = parseInt(match[2])
     let year = now.getFullYear()
 
-    // 날짜 문자열 생성 (한국 시간대 +09:00 명시)
+    // 시간 설정 (입력된 그대로 사용)
     const hour = hasTime ? hourOffset : 9
     const minute = hasTime ? minuteOffset : 0
-    const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00+09:00`
 
-    const targetDate = new Date(dateString)
+    // 로컬 시간으로 날짜 생성 (timezone 변환 없음)
+    const targetDate = new Date(year, month, day, hour, minute, 0, 0)
 
     // 이미 지난 날짜면 내년으로
     if (targetDate < now) {
       year += 1
-      const nextYearDateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00+09:00`
-      const nextYearDate = new Date(nextYearDateString)
+      const nextYearDate = new Date(year, month, day, hour, minute, 0, 0)
       results.push({
         text: match[0],
         startDate: nextYearDate,
@@ -156,12 +154,11 @@ function parseKoreanDate(text: string): ExtractedDate[] {
 
     console.log('📅 Korean date parsed:', {
       text: match[0],
-      month,
+      month: month + 1,
       day,
       hasTime,
       hour,
       minute,
-      dateString,
       finalDate: targetDate.toISOString()
     })
   }
@@ -170,25 +167,24 @@ function parseKoreanDate(text: string): ExtractedDate[] {
   const numericDatePattern = /(\d{1,2})[.\/\-](\d{1,2})/g
   const numericMatches = Array.from(text.matchAll(numericDatePattern))
   for (const match of numericMatches) {
-    const month = parseInt(match[1])
+    const month = parseInt(match[1]) - 1 // JavaScript months are 0-indexed
     const day = parseInt(match[2])
 
     // 유효한 월/일 범위 체크
-    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+    if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
       let year = now.getFullYear()
 
-      // 날짜 문자열 생성 (한국 시간대 +09:00 명시)
+      // 시간 설정 (입력된 그대로 사용)
       const hour = hasTime ? hourOffset : 9
       const minute = hasTime ? minuteOffset : 0
-      const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00+09:00`
 
-      const targetDate = new Date(dateString)
+      // 로컬 시간으로 날짜 생성 (timezone 변환 없음)
+      const targetDate = new Date(year, month, day, hour, minute, 0, 0)
 
       // 이미 지난 날짜면 내년으로
       if (targetDate < now) {
         year += 1
-        const nextYearDateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00+09:00`
-        const nextYearDate = new Date(nextYearDateString)
+        const nextYearDate = new Date(year, month, day, hour, minute, 0, 0)
         results.push({
           text: match[0],
           startDate: nextYearDate,
@@ -208,14 +204,48 @@ function parseKoreanDate(text: string): ExtractedDate[] {
 }
 
 export function extractDates(text: string): ExtractedDate[] {
-  // Try chrono first (for English)
-  const chronoResults = chrono.parse(text, new Date(), { forwardDate: true })
-  const results: ExtractedDate[] = chronoResults.map((result) => ({
-    text: result.text,
-    startDate: result.start.date(),
-    endDate: result.end ? result.end.date() : undefined,
-    index: result.index
-  }))
+  const now = new Date()
+
+  // Try chrono first (for English) - use current date as reference
+  const chronoResults = chrono.parse(text, now, { forwardDate: true })
+  const results: ExtractedDate[] = chronoResults.map((result) => {
+    const parsedDate = result.start.date()
+
+    // chrono가 반환한 Date에서 숫자만 추출해서 로컬 Date 생성
+    const localDate = new Date(
+      parsedDate.getFullYear(),
+      parsedDate.getMonth(),
+      parsedDate.getDate(),
+      parsedDate.getHours(),
+      parsedDate.getMinutes(),
+      parsedDate.getSeconds()
+    )
+
+    console.log('🌍 Chrono parsed:', {
+      text: result.text,
+      parsed: parsedDate.toISOString(),
+      year: parsedDate.getFullYear(),
+      month: parsedDate.getMonth(),
+      date: parsedDate.getDate(),
+      hours: parsedDate.getHours(),
+      minutes: parsedDate.getMinutes(),
+      localDate: localDate.toISOString()
+    })
+
+    return {
+      text: result.text,
+      startDate: localDate,
+      endDate: result.end ? new Date(
+        result.end.date().getFullYear(),
+        result.end.date().getMonth(),
+        result.end.date().getDate(),
+        result.end.date().getHours(),
+        result.end.date().getMinutes(),
+        result.end.date().getSeconds()
+      ) : undefined,
+      index: result.index
+    }
+  })
 
   // Add Korean date parsing
   const koreanResults = parseKoreanDate(text)
@@ -228,6 +258,12 @@ export function extractDates(text: string): ExtractedDate[] {
       seen.add(kr.index)
     }
   }
+
+  console.log('📋 All extracted dates:', results.map(r => ({
+    text: r.text,
+    date: r.startDate.toISOString(),
+    localTime: r.startDate.toLocaleString('ko-KR')
+  })))
 
   return results
 }
