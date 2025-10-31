@@ -32,6 +32,24 @@ function parseKoreanDate(text: string): ExtractedDate[] {
     }
     minuteOffset = minute
     hasTime = true
+
+    console.log('🕐 Time parsed:', {
+      text: tm[0],
+      meridiem,
+      hour,
+      minute,
+      hourOffset,
+      minuteOffset
+    })
+  }
+
+  // Helper function to create date with KST timezone
+  const createKSTDate = (baseDate: Date, hour: number, minute: number): Date => {
+    const year = baseDate.getFullYear()
+    const month = baseDate.getMonth() + 1
+    const day = baseDate.getDate()
+    const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00+09:00`
+    return new Date(dateString)
   }
 
   // 내일
@@ -40,11 +58,11 @@ function parseKoreanDate(text: string): ExtractedDate[] {
   if (tomorrowMatches.length > 0) {
     const tomorrow = new Date(now)
     tomorrow.setDate(tomorrow.getDate() + 1)
-    tomorrow.setHours(hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0, 0, 0)
+    const tomorrowDate = createKSTDate(tomorrow, hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0)
 
     results.push({
       text: '내일' + (hasTime ? ' ' + timeMatches[0][0] : ''),
-      startDate: tomorrow,
+      startDate: tomorrowDate,
       index: tomorrowMatches[0].index!
     })
   }
@@ -55,11 +73,11 @@ function parseKoreanDate(text: string): ExtractedDate[] {
   if (dayAfterMatches.length > 0) {
     const dayAfter = new Date(now)
     dayAfter.setDate(dayAfter.getDate() + 2)
-    dayAfter.setHours(hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0, 0, 0)
+    const dayAfterDate = createKSTDate(dayAfter, hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0)
 
     results.push({
       text: '모레' + (hasTime ? ' ' + timeMatches[0][0] : ''),
-      startDate: dayAfter,
+      startDate: dayAfterDate,
       index: dayAfterMatches[0].index!
     })
   }
@@ -71,11 +89,11 @@ function parseKoreanDate(text: string): ExtractedDate[] {
     const days = parseInt(match[1])
     const futureDate = new Date(now)
     futureDate.setDate(futureDate.getDate() + days)
-    futureDate.setHours(hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0, 0, 0)
+    const futureDateKST = createKSTDate(futureDate, hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0)
 
     results.push({
       text: match[0],
-      startDate: futureDate,
+      startDate: futureDateKST,
       index: match.index!
     })
   }
@@ -94,11 +112,11 @@ function parseKoreanDate(text: string): ExtractedDate[] {
 
     const nextWeekDate = new Date(now)
     nextWeekDate.setDate(nextWeekDate.getDate() + daysToAdd)
-    nextWeekDate.setHours(hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0, 0, 0)
+    const nextWeekDateKST = createKSTDate(nextWeekDate, hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0)
 
     results.push({
       text: match[0],
-      startDate: nextWeekDate,
+      startDate: nextWeekDateKST,
       index: match.index!
     })
   }
@@ -107,22 +125,44 @@ function parseKoreanDate(text: string): ExtractedDate[] {
   const monthDayPattern = /(\d{1,2})월\s?(\d{1,2})일/g
   const monthDayMatches = Array.from(text.matchAll(monthDayPattern))
   for (const match of monthDayMatches) {
-    const month = parseInt(match[1]) - 1
+    const month = parseInt(match[1])
     const day = parseInt(match[2])
-    const year = now.getFullYear()
-    const targetDate = new Date(year, month, day)
+    let year = now.getFullYear()
+
+    // 날짜 문자열 생성 (한국 시간대 +09:00 명시)
+    const hour = hasTime ? hourOffset : 9
+    const minute = hasTime ? minuteOffset : 0
+    const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00+09:00`
+
+    const targetDate = new Date(dateString)
 
     // 이미 지난 날짜면 내년으로
     if (targetDate < now) {
-      targetDate.setFullYear(year + 1)
+      year += 1
+      const nextYearDateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00+09:00`
+      const nextYearDate = new Date(nextYearDateString)
+      results.push({
+        text: match[0],
+        startDate: nextYearDate,
+        index: match.index!
+      })
+    } else {
+      results.push({
+        text: match[0],
+        startDate: targetDate,
+        index: match.index!
+      })
     }
 
-    targetDate.setHours(hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0, 0, 0)
-
-    results.push({
+    console.log('📅 Korean date parsed:', {
       text: match[0],
-      startDate: targetDate,
-      index: match.index!
+      month,
+      day,
+      hasTime,
+      hour,
+      minute,
+      dateString,
+      finalDate: targetDate.toISOString()
     })
   }
 
@@ -130,26 +170,37 @@ function parseKoreanDate(text: string): ExtractedDate[] {
   const numericDatePattern = /(\d{1,2})[.\/\-](\d{1,2})/g
   const numericMatches = Array.from(text.matchAll(numericDatePattern))
   for (const match of numericMatches) {
-    const month = parseInt(match[1]) - 1
+    const month = parseInt(match[1])
     const day = parseInt(match[2])
 
     // 유효한 월/일 범위 체크
-    if (month >= 0 && month < 12 && day >= 1 && day <= 31) {
-      const year = now.getFullYear()
-      const targetDate = new Date(year, month, day)
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      let year = now.getFullYear()
+
+      // 날짜 문자열 생성 (한국 시간대 +09:00 명시)
+      const hour = hasTime ? hourOffset : 9
+      const minute = hasTime ? minuteOffset : 0
+      const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00+09:00`
+
+      const targetDate = new Date(dateString)
 
       // 이미 지난 날짜면 내년으로
       if (targetDate < now) {
-        targetDate.setFullYear(year + 1)
+        year += 1
+        const nextYearDateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00+09:00`
+        const nextYearDate = new Date(nextYearDateString)
+        results.push({
+          text: match[0],
+          startDate: nextYearDate,
+          index: match.index!
+        })
+      } else {
+        results.push({
+          text: match[0],
+          startDate: targetDate,
+          index: match.index!
+        })
       }
-
-      targetDate.setHours(hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0, 0, 0)
-
-      results.push({
-        text: match[0],
-        startDate: targetDate,
-        index: match.index!
-      })
     }
   }
 
