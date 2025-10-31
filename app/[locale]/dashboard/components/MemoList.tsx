@@ -38,6 +38,8 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
   const [newMemo, setNewMemo] = useState({ title: '', content: '' })
   const [editingMemo, setEditingMemo] = useState<string | null>(null)
   const [editContent, setEditContent] = useState({ title: '', content: '' })
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterByDate, setFilterByDate] = useState(false)
 
   useEffect(() => {
     fetchMemos()
@@ -157,6 +159,17 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
     }
   }
 
+  // Filter memos based on search query and date filter
+  const filteredMemos = memos.filter(memo => {
+    const matchesSearch = searchQuery === '' ||
+      memo.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      memo.content.toLowerCase().includes(searchQuery.toLowerCase())
+
+    const matchesDateFilter = !filterByDate || memo.hasDate
+
+    return matchesSearch && matchesDateFilter
+  })
+
   if (loading) {
     return <div className="text-center py-8">Loading memos...</div>
   }
@@ -167,7 +180,7 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
       <div className="flex justify-between items-center bg-white rounded-xl p-4 shadow-sm border border-gray-200">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Memos</h2>
-          <p className="text-sm text-gray-500">{memos.length} notes</p>
+          <p className="text-sm text-gray-500">{filteredMemos.length} of {memos.length} notes</p>
         </div>
         <button
           onClick={() => setShowNewMemo(true)}
@@ -178,6 +191,51 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
           </svg>
           New Memo
         </button>
+      </div>
+
+      {/* Search and Filter */}
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+        <div className="flex gap-3 items-center">
+          <div className="flex-1 relative">
+            <svg className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search memos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <button
+            onClick={() => setFilterByDate(!filterByDate)}
+            className={`px-4 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 ${
+              filterByDate
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            With Dates
+          </button>
+          {(searchQuery || filterByDate) && (
+            <button
+              onClick={() => {
+                setSearchQuery('')
+                setFilterByDate(false)
+              }}
+              className="px-3 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
+              title="Clear filters"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* New Memo Form */}
@@ -224,16 +282,16 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
 
       {/* Memo List */}
       <div className="space-y-3 max-h-[calc(100vh-240px)] overflow-y-auto pr-2">
-        {memos.length === 0 ? (
+        {filteredMemos.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl border-2 border-dashed border-gray-300">
             <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <p className="text-gray-500 font-medium">No memos yet</p>
-            <p className="text-gray-400 text-sm mt-1">Create your first memo to get started!</p>
+            <p className="text-gray-500 font-medium">{memos.length === 0 ? 'No memos yet' : 'No memos found'}</p>
+            <p className="text-gray-400 text-sm mt-1">{memos.length === 0 ? 'Create your first memo to get started!' : 'Try adjusting your search or filters'}</p>
           </div>
         ) : (
-          memos.map((memo) => (
+          filteredMemos.map((memo) => (
             <div key={memo.id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-lg transition-all hover:border-blue-300 group">
               {editingMemo === memo.id ? (
                 <div>
