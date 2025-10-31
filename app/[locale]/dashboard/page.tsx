@@ -3,11 +3,15 @@
 import { useSession, signOut } from 'next-auth/react'
 import { redirect } from 'next/navigation'
 import { useState } from 'react'
+import { useParams } from 'next/navigation'
 import MemoList from './components/MemoList'
 import CalendarView from './components/CalendarView'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 
 export default function DashboardPage() {
   const { data: session, status } = useSession()
+  const params = useParams()
+  const locale = params.locale as string
   const [refreshKey, setRefreshKey] = useState(0)
 
   const handleEventAdded = () => {
@@ -23,7 +27,7 @@ export default function DashboardPage() {
   }
 
   if (!session) {
-    redirect('/login')
+    redirect(`/${locale}/login`)
   }
 
   return (
@@ -46,6 +50,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              <LanguageSwitcher />
               <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span className="text-sm text-gray-700 font-medium">
@@ -53,7 +58,7 @@ export default function DashboardPage() {
                 </span>
               </div>
               <button
-                onClick={() => signOut({ callbackUrl: '/login' })}
+                onClick={() => signOut({ callbackUrl: `/${locale}/login` })}
                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 Sign out

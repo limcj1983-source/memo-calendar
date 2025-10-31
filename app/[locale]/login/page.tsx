@@ -2,11 +2,15 @@
 
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 
 export default function LoginPage() {
   const router = useRouter()
+  const params = useParams()
+  const locale = params.locale as string
+  const t = useTranslations()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -25,12 +29,12 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError('Invalid email or password')
+        setError(t('auth.login.errorInvalid'))
       } else {
-        router.push('/dashboard')
+        router.push(`/${locale}/dashboard`)
       }
     } catch (error) {
-      setError('Something went wrong')
+      setError(t('auth.login.errorGeneral'))
     } finally {
       setLoading(false)
     }
@@ -48,10 +52,10 @@ export default function LoginPage() {
             </div>
           </div>
           <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Memo Calendar
+            {t('common.appName')}
           </h2>
           <p className="mt-3 text-sm text-gray-500 font-medium">
-            Sign in to your account
+            {t('auth.login.title')}
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -66,7 +70,7 @@ export default function LoginPage() {
           <div className="space-y-5">
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                Email Address
+                {t('common.email')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -82,13 +86,13 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="you@example.com"
+                  placeholder={t('auth.login.emailPlaceholder')}
                 />
               </div>
             </div>
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
-                Password
+                {t('common.password')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -104,7 +108,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Enter your password"
+                  placeholder={t('auth.login.passwordPlaceholder')}
                 />
               </div>
             </div>
@@ -122,23 +126,23 @@ export default function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Signing in...
+                  {t('common.signingIn')}
                 </>
               ) : (
                 <>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                   </svg>
-                  Sign in
+                  {t('common.signIn')}
                 </>
               )}
             </button>
           </div>
 
           <div className="text-center">
-            <span className="text-sm text-gray-600">Don't have an account? </span>
-            <Link href="/register" className="text-sm font-semibold text-blue-600 hover:text-blue-500 transition-colors">
-              Sign up
+            <span className="text-sm text-gray-600">{t('auth.login.noAccount')} </span>
+            <Link href={`/${locale}/register`} className="text-sm font-semibold text-blue-600 hover:text-blue-500 transition-colors">
+              {t('common.signUp')}
             </Link>
           </div>
         </form>

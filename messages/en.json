@@ -1,0 +1,109 @@
+{
+  "common": {
+    "appName": "Memo Calendar",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign out",
+    "email": "Email Address",
+    "password": "Password",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "close": "Close",
+    "today": "Today",
+    "loading": "Loading...",
+    "signingIn": "Signing in...",
+    "newEvent": "New Event",
+    "newCalendar": "New Calendar",
+    "newMemo": "New Memo"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in to your account",
+      "emailPlaceholder": "you@example.com",
+      "passwordPlaceholder": "Enter your password",
+      "noAccount": "Don't have an account?",
+      "errorInvalid": "Invalid email or password",
+      "errorGeneral": "Something went wrong"
+    },
+    "register": {
+      "title": "Create your account",
+      "name": "Full Name",
+      "namePlaceholder": "John Doe",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "hasAccount": "Already have an account?",
+      "errorPasswordMismatch": "Passwords do not match",
+      "errorGeneral": "Something went wrong",
+      "creating": "Creating account..."
+    }
+  },
+  "dashboard": {
+    "welcome": "Welcome",
+    "memos": "Memos",
+    "calendar": "Calendar"
+  },
+  "memo": {
+    "title": "Memos",
+    "subtitle": "Capture your thoughts and dates",
+    "newMemo": "New Memo",
+    "titlePlaceholder": "Memo title (optional)",
+    "contentPlaceholder": "Write your memo here... Try writing dates like 'tomorrow at 3pm' or '12월 25일'",
+    "editMemo": "Edit Memo",
+    "deleteMemo": "Delete this memo?",
+    "dateDetected": "Date Detected",
+    "noMemos": "No memos yet",
+    "noMemosDescription": "Start by creating your first memo",
+    "createEventFrom": "Create Event",
+    "extractedDates": "Extracted Dates"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "eventsThisMonth": "events this month",
+    "myCalendars": "My Calendars",
+    "noCalendars": "No calendars yet",
+    "viewMonth": "Month",
+    "viewWeek": "Week",
+    "viewDay": "Day",
+    "days": {
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    },
+    "newCalendar": "New Calendar",
+    "calendarName": "Calendar Name",
+    "calendarNamePlaceholder": "e.g., Work, Personal",
+    "description": "Description",
+    "descriptionPlaceholder": "Calendar description (optional)",
+    "color": "Color",
+    "type": "Type",
+    "types": {
+      "personal": "Personal",
+      "work": "Work",
+      "school": "School",
+      "family": "Family",
+      "health": "Health",
+      "other": "Other"
+    },
+    "deleteCalendar": "Delete this calendar and all its events?",
+    "newEvent": "New Event",
+    "eventTitle": "Event Title",
+    "eventTitlePlaceholder": "Meeting, Appointment, etc.",
+    "eventDescription": "Description",
+    "eventDescriptionPlaceholder": "Event details (optional)",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "allDay": "All Day",
+    "selectCalendar": "Select Calendar",
+    "eventDetails": "Event Details",
+    "deleteEvent": "Delete this event?",
+    "noEvents": "No events"
+  }
+}

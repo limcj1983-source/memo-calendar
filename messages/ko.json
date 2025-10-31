@@ -1,0 +1,109 @@
+{
+  "common": {
+    "appName": "메모 캘린더",
+    "signIn": "로그인",
+    "signUp": "회원가입",
+    "signOut": "로그아웃",
+    "email": "이메일 주소",
+    "password": "비밀번호",
+    "save": "저장",
+    "cancel": "취소",
+    "delete": "삭제",
+    "edit": "수정",
+    "create": "생성",
+    "update": "업데이트",
+    "close": "닫기",
+    "today": "오늘",
+    "loading": "로딩 중...",
+    "signingIn": "로그인 중...",
+    "newEvent": "새 이벤트",
+    "newCalendar": "새 캘린더",
+    "newMemo": "새 메모"
+  },
+  "auth": {
+    "login": {
+      "title": "계정에 로그인하세요",
+      "emailPlaceholder": "your@email.com",
+      "passwordPlaceholder": "비밀번호를 입력하세요",
+      "noAccount": "계정이 없으신가요?",
+      "errorInvalid": "이메일 또는 비밀번호가 올바르지 않습니다",
+      "errorGeneral": "문제가 발생했습니다"
+    },
+    "register": {
+      "title": "계정 만들기",
+      "name": "이름",
+      "namePlaceholder": "홍길동",
+      "confirmPassword": "비밀번호 확인",
+      "confirmPasswordPlaceholder": "비밀번호를 다시 입력하세요",
+      "hasAccount": "이미 계정이 있으신가요?",
+      "errorPasswordMismatch": "비밀번호가 일치하지 않습니다",
+      "errorGeneral": "문제가 발생했습니다",
+      "creating": "계정 생성 중..."
+    }
+  },
+  "dashboard": {
+    "welcome": "환영합니다",
+    "memos": "메모",
+    "calendar": "캘린더"
+  },
+  "memo": {
+    "title": "메모",
+    "subtitle": "생각과 일정을 기록하세요",
+    "newMemo": "새 메모",
+    "titlePlaceholder": "메모 제목 (선택사항)",
+    "contentPlaceholder": "여기에 메모를 작성하세요... '내일 오후 3시' 또는 'tomorrow at 3pm' 같은 날짜를 써보세요",
+    "editMemo": "메모 수정",
+    "deleteMemo": "이 메모를 삭제하시겠습니까?",
+    "dateDetected": "날짜 감지됨",
+    "noMemos": "메모가 없습니다",
+    "noMemosDescription": "첫 메모를 작성해보세요",
+    "createEventFrom": "일정 만들기",
+    "extractedDates": "추출된 날짜"
+  },
+  "calendar": {
+    "title": "캘린더",
+    "eventsThisMonth": "개의 이벤트",
+    "myCalendars": "내 캘린더",
+    "noCalendars": "캘린더가 없습니다",
+    "viewMonth": "월",
+    "viewWeek": "주",
+    "viewDay": "일",
+    "days": {
+      "sun": "일",
+      "mon": "월",
+      "tue": "화",
+      "wed": "수",
+      "thu": "목",
+      "fri": "금",
+      "sat": "토"
+    },
+    "newCalendar": "새 캘린더",
+    "calendarName": "캘린더 이름",
+    "calendarNamePlaceholder": "예: 업무, 개인",
+    "description": "설명",
+    "descriptionPlaceholder": "캘린더 설명 (선택사항)",
+    "color": "색상",
+    "type": "유형",
+    "types": {
+      "personal": "개인",
+      "work": "업무",
+      "school": "학교",
+      "family": "가족",
+      "health": "건강",
+      "other": "기타"
+    },
+    "deleteCalendar": "이 캘린더와 모든 이벤트를 삭제하시겠습니까?",
+    "newEvent": "새 이벤트",
+    "eventTitle": "이벤트 제목",
+    "eventTitlePlaceholder": "회의, 약속 등",
+    "eventDescription": "설명",
+    "eventDescriptionPlaceholder": "이벤트 세부 정보 (선택사항)",
+    "startDate": "시작 날짜",
+    "endDate": "종료 날짜",
+    "allDay": "종일",
+    "selectCalendar": "캘린더 선택",
+    "eventDetails": "이벤트 상세",
+    "deleteEvent": "이 이벤트를 삭제하시겠습니까?",
+    "noEvents": "이벤트 없음"
+  }
+}
