@@ -2,9 +2,21 @@ import * as chrono from 'chrono-node'
 
 export interface ExtractedDate {
   text: string
-  startDate: Date
-  endDate?: Date
+  startDate: string  // ISO string without timezone
+  endDate?: string   // ISO string without timezone
   index: number
+}
+
+// Helper to convert Date to ISO string without timezone (YYYY-MM-DDTHH:mm:ss)
+function dateToLocalISO(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hour = String(date.getHours()).padStart(2, '0')
+  const minute = String(date.getMinutes()).padStart(2, '0')
+  const second = String(date.getSeconds()).padStart(2, '0')
+
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}`
 }
 
 function parseKoreanDate(text: string): ExtractedDate[] {
@@ -61,7 +73,7 @@ function parseKoreanDate(text: string): ExtractedDate[] {
 
     results.push({
       text: '내일' + (hasTime ? ' ' + timeMatches[0][0] : ''),
-      startDate: tomorrowDate,
+      startDate: dateToLocalISO(tomorrowDate),
       index: tomorrowMatches[0].index!
     })
   }
@@ -76,7 +88,7 @@ function parseKoreanDate(text: string): ExtractedDate[] {
 
     results.push({
       text: '모레' + (hasTime ? ' ' + timeMatches[0][0] : ''),
-      startDate: dayAfterDate,
+      startDate: dateToLocalISO(dayAfterDate),
       index: dayAfterMatches[0].index!
     })
   }
@@ -92,7 +104,7 @@ function parseKoreanDate(text: string): ExtractedDate[] {
 
     results.push({
       text: match[0],
-      startDate: futureDateLocal,
+      startDate: dateToLocalISO(futureDateLocal),
       index: match.index!
     })
   }
@@ -115,7 +127,7 @@ function parseKoreanDate(text: string): ExtractedDate[] {
 
     results.push({
       text: match[0],
-      startDate: nextWeekDateLocal,
+      startDate: dateToLocalISO(nextWeekDateLocal),
       index: match.index!
     })
   }
@@ -141,13 +153,13 @@ function parseKoreanDate(text: string): ExtractedDate[] {
       const nextYearDate = new Date(year, month, day, hour, minute, 0, 0)
       results.push({
         text: match[0],
-        startDate: nextYearDate,
+        startDate: dateToLocalISO(nextYearDate),
         index: match.index!
       })
     } else {
       results.push({
         text: match[0],
-        startDate: targetDate,
+        startDate: dateToLocalISO(targetDate),
         index: match.index!
       })
     }
@@ -187,13 +199,13 @@ function parseKoreanDate(text: string): ExtractedDate[] {
         const nextYearDate = new Date(year, month, day, hour, minute, 0, 0)
         results.push({
           text: match[0],
-          startDate: nextYearDate,
+          startDate: dateToLocalISO(nextYearDate),
           index: match.index!
         })
       } else {
         results.push({
           text: match[0],
-          startDate: targetDate,
+          startDate: dateToLocalISO(targetDate),
           index: match.index!
         })
       }
@@ -201,6 +213,32 @@ function parseKoreanDate(text: string): ExtractedDate[] {
   }
 
   return results
+}
+
+// Parse English time formats like "pm3", "am11"
+function parseEnglishTime(text: string): { hour: number; minute: number } | null {
+  const pmPattern = /pm(\d{1,2})/i
+  const amPattern = /am(\d{1,2})/i
+
+  const pmMatch = text.match(pmPattern)
+  if (pmMatch) {
+    const hour = parseInt(pmMatch[1])
+    return {
+      hour: hour === 12 ? 12 : hour + 12,
+      minute: 0
+    }
+  }
+
+  const amMatch = text.match(amPattern)
+  if (amMatch) {
+    const hour = parseInt(amMatch[1])
+    return {
+      hour: hour === 12 ? 0 : hour,
+      minute: 0
+    }
+  }
+
+  return null
 }
 
 export function extractDates(text: string): ExtractedDate[] {
@@ -212,7 +250,7 @@ export function extractDates(text: string): ExtractedDate[] {
     const parsedDate = result.start.date()
 
     // chrono가 반환한 Date에서 숫자만 추출해서 로컬 Date 생성
-    const localDate = new Date(
+    let localDate = new Date(
       parsedDate.getFullYear(),
       parsedDate.getMonth(),
       parsedDate.getDate(),
@@ -220,6 +258,21 @@ export function extractDates(text: string): ExtractedDate[] {
       parsedDate.getMinutes(),
       parsedDate.getSeconds()
     )
+
+    // chrono가 시간을 파싱하지 못한 경우 (기본값 12:00), pm3/am11 같은 형식 확인
+    if (parsedDate.getHours() === 12 && parsedDate.getMinutes() === 0) {
+      const timeInfo = parseEnglishTime(text)
+      if (timeInfo) {
+        localDate = new Date(
+          parsedDate.getFullYear(),
+          parsedDate.getMonth(),
+          parsedDate.getDate(),
+          timeInfo.hour,
+          timeInfo.minute,
+          0
+        )
+      }
+    }
 
     console.log('🌍 Chrono parsed:', {
       text: result.text,
@@ -234,15 +287,15 @@ export function extractDates(text: string): ExtractedDate[] {
 
     return {
       text: result.text,
-      startDate: localDate,
-      endDate: result.end ? new Date(
+      startDate: dateToLocalISO(localDate),
+      endDate: result.end ? dateToLocalISO(new Date(
         result.end.date().getFullYear(),
         result.end.date().getMonth(),
         result.end.date().getDate(),
         result.end.date().getHours(),
         result.end.date().getMinutes(),
         result.end.date().getSeconds()
-      ) : undefined,
+      )) : undefined,
       index: result.index
     }
   })
