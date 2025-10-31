@@ -99,7 +99,7 @@ export async function PATCH(
         title,
         content,
         hasDate: hasDates,
-        extractedDates: hasDates ? extractedDates : null
+        extractedDates: hasDates ? (extractedDates as any) : undefined
       },
       include: {
         events: {

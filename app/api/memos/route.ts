@@ -86,7 +86,7 @@ export async function POST(request: Request) {
         content,
         userId: user.id,
         hasDate: hasDates,
-        extractedDates: hasDates ? extractedDates : null
+        extractedDates: hasDates ? (extractedDates as any) : undefined
       },
       include: {
         events: true
