@@ -11,9 +11,10 @@ function parseKoreanDate(text: string): ExtractedDate[] {
   const results: ExtractedDate[] = []
   const now = new Date()
 
-  // 오전/오후 N시 먼저 파싱
-  const timePattern = /(오전|오후)\s?(\d{1,2})시?/g
+  // 오전/오후 N시 N분 파싱 (분은 선택적)
+  const timePattern = /(오전|오후)\s?(\d{1,2})시?\s?(\d{1,2}분)?/g
   let hourOffset = 9
+  let minuteOffset = 0
   let hasTime = false
 
   const timeMatches = Array.from(text.matchAll(timePattern))
@@ -21,7 +22,15 @@ function parseKoreanDate(text: string): ExtractedDate[] {
     const tm = timeMatches[0]
     const meridiem = tm[1]
     const hour = parseInt(tm[2])
-    hourOffset = meridiem === '오후' && hour < 12 ? hour + 12 : hour
+    const minute = tm[3] ? parseInt(tm[3]) : 0
+
+    // 오전/오후 처리
+    if (meridiem === '오후') {
+      hourOffset = hour === 12 ? 12 : hour + 12
+    } else {
+      hourOffset = hour === 12 ? 0 : hour
+    }
+    minuteOffset = minute
     hasTime = true
   }
 
@@ -31,7 +40,7 @@ function parseKoreanDate(text: string): ExtractedDate[] {
   if (tomorrowMatches.length > 0) {
     const tomorrow = new Date(now)
     tomorrow.setDate(tomorrow.getDate() + 1)
-    tomorrow.setHours(hasTime ? hourOffset : 9, 0, 0, 0)
+    tomorrow.setHours(hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0, 0, 0)
 
     results.push({
       text: '내일' + (hasTime ? ' ' + timeMatches[0][0] : ''),
@@ -46,7 +55,7 @@ function parseKoreanDate(text: string): ExtractedDate[] {
   if (dayAfterMatches.length > 0) {
     const dayAfter = new Date(now)
     dayAfter.setDate(dayAfter.getDate() + 2)
-    dayAfter.setHours(hasTime ? hourOffset : 9, 0, 0, 0)
+    dayAfter.setHours(hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0, 0, 0)
 
     results.push({
       text: '모레' + (hasTime ? ' ' + timeMatches[0][0] : ''),
@@ -62,7 +71,7 @@ function parseKoreanDate(text: string): ExtractedDate[] {
     const days = parseInt(match[1])
     const futureDate = new Date(now)
     futureDate.setDate(futureDate.getDate() + days)
-    futureDate.setHours(hasTime ? hourOffset : 9, 0, 0, 0)
+    futureDate.setHours(hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0, 0, 0)
 
     results.push({
       text: match[0],
@@ -85,7 +94,7 @@ function parseKoreanDate(text: string): ExtractedDate[] {
 
     const nextWeekDate = new Date(now)
     nextWeekDate.setDate(nextWeekDate.getDate() + daysToAdd)
-    nextWeekDate.setHours(hasTime ? hourOffset : 9, 0, 0, 0)
+    nextWeekDate.setHours(hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0, 0, 0)
 
     results.push({
       text: match[0],
@@ -94,7 +103,7 @@ function parseKoreanDate(text: string): ExtractedDate[] {
     })
   }
 
-  // N월 N일
+  // N월 N일 (한글 형식)
   const monthDayPattern = /(\d{1,2})월\s?(\d{1,2})일/g
   const monthDayMatches = Array.from(text.matchAll(monthDayPattern))
   for (const match of monthDayMatches) {
@@ -108,13 +117,40 @@ function parseKoreanDate(text: string): ExtractedDate[] {
       targetDate.setFullYear(year + 1)
     }
 
-    targetDate.setHours(hasTime ? hourOffset : 9, 0, 0, 0)
+    targetDate.setHours(hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0, 0, 0)
 
     results.push({
       text: match[0],
       startDate: targetDate,
       index: match.index!
     })
+  }
+
+  // 숫자 날짜 형식: 11.05, 11/5, 11-5
+  const numericDatePattern = /(\d{1,2})[.\/\-](\d{1,2})/g
+  const numericMatches = Array.from(text.matchAll(numericDatePattern))
+  for (const match of numericMatches) {
+    const month = parseInt(match[1]) - 1
+    const day = parseInt(match[2])
+
+    // 유효한 월/일 범위 체크
+    if (month >= 0 && month < 12 && day >= 1 && day <= 31) {
+      const year = now.getFullYear()
+      const targetDate = new Date(year, month, day)
+
+      // 이미 지난 날짜면 내년으로
+      if (targetDate < now) {
+        targetDate.setFullYear(year + 1)
+      }
+
+      targetDate.setHours(hasTime ? hourOffset : 9, hasTime ? minuteOffset : 0, 0, 0)
+
+      results.push({
+        text: match[0],
+        startDate: targetDate,
+        index: match.index!
+      })
+    }
   }
 
   return results
@@ -132,7 +168,15 @@ export function extractDates(text: string): ExtractedDate[] {
 
   // Add Korean date parsing
   const koreanResults = parseKoreanDate(text)
-  results.push(...koreanResults)
+
+  // 중복 제거 (같은 위치의 날짜는 하나만)
+  const seen = new Set(results.map(r => r.index))
+  for (const kr of koreanResults) {
+    if (!seen.has(kr.index)) {
+      results.push(kr)
+      seen.add(kr.index)
+    }
+  }
 
   return results
 }
