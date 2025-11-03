@@ -89,31 +89,29 @@ function DraggableEvent({ event, onClick }: { event: Event; onClick: () => void 
   const style = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
-    cursor: isDragging ? 'grabbing' : 'grab'
   }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      {...listeners}
-      {...attributes}
-      className="text-xs p-1 rounded hover:opacity-80 transition-opacity"
-      onClick={(e) => {
-        if (!isDragging) {
-          e.stopPropagation()
-          onClick()
-        }
-      }}
+      className="text-xs p-1 rounded transition-opacity"
     >
       <div
-        className="font-medium truncate px-1 py-0.5 rounded"
+        {...listeners}
+        {...attributes}
+        className="font-medium truncate px-1 py-0.5 rounded cursor-grab active:cursor-grabbing hover:opacity-80 relative group"
         style={{
           backgroundColor: event.calendar.color + '20',
           borderLeft: `3px solid ${event.calendar.color}`
         }}
+        onClick={(e) => {
+          e.stopPropagation()
+          onClick()
+        }}
       >
         {event.title}
+        <span className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 text-gray-400 text-xs pr-1">⋮⋮</span>
       </div>
     </div>
   )
@@ -142,10 +140,10 @@ function DroppableDay({
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[100px] border rounded-lg p-2 transition-colors ${
+      className={`min-h-[100px] border rounded-lg p-2 transition-all duration-200 ${
         day ? 'bg-white hover:bg-gray-50' : 'bg-gray-50'
       } ${isToday ? 'border-blue-500 border-2' : 'border-gray-200'} ${
-        isOver ? 'bg-blue-50 border-blue-400' : ''
+        isOver && day ? 'bg-blue-100 border-blue-500 border-2 shadow-lg scale-105' : ''
       }`}
     >
       {day && (
@@ -153,7 +151,7 @@ function DroppableDay({
           <div
             className={`text-sm font-semibold mb-1 ${
               isToday ? 'text-blue-600' : 'text-gray-700'
-            }`}
+            } ${isOver ? 'text-blue-600' : ''}`}
           >
             {day}
           </div>
