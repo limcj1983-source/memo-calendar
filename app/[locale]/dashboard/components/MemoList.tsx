@@ -133,14 +133,27 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
     }
   }
 
+  // Remove date expression from text
+  const removeDateExpression = (text: string, dateText: string): string => {
+    // Remove the date expression and clean up extra spaces
+    return text.replace(dateText, '').replace(/\s+/g, ' ').trim()
+  }
+
   const addToCalendar = async (memo: Memo, dateInfo: ExtractedDate, calendarId: string) => {
     try {
+      // Remove date expression from title
+      const originalTitle = memo.title || memo.content.substring(0, 50)
+      const cleanTitle = removeDateExpression(originalTitle, dateInfo.text)
+
+      // Also clean description
+      const cleanDescription = removeDateExpression(memo.content, dateInfo.text)
+
       const res = await fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: memo.title || memo.content.substring(0, 50),
-          description: memo.content,
+          title: cleanTitle || originalTitle, // Fallback to original if empty
+          description: cleanDescription || memo.content,
           startDate: dateInfo.startDate,
           endDate: dateInfo.endDate,
           calendarId,
