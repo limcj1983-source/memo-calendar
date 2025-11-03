@@ -133,20 +133,29 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
     }
   }
 
-  // Remove date expression from text
-  const removeDateExpression = (text: string, dateText: string): string => {
-    // Remove the date expression and clean up extra spaces
-    return text.replace(dateText, '').replace(/\s+/g, ' ').trim()
+  // Remove only date expression, keep time
+  const removeDateExpression = (text: string): string => {
+    // Remove Korean date patterns: 내일, 모레, N일 후, N월 N일, etc.
+    let cleaned = text
+      .replace(/내일\s*/g, '')
+      .replace(/모레\s*/g, '')
+      .replace(/\d+일\s*후\s*/g, '')
+      .replace(/다음\s*주\s*[월화수목금토일]요일\s*/g, '')
+      .replace(/\d{1,2}월\s*\d{1,2}일\s*/g, '')
+      .replace(/\d{1,2}[.\/\-]\d{1,2}\s*/g, '')
+
+    // Clean up extra spaces
+    return cleaned.replace(/\s+/g, ' ').trim()
   }
 
   const addToCalendar = async (memo: Memo, dateInfo: ExtractedDate, calendarId: string) => {
     try {
       // Remove date expression from title
       const originalTitle = memo.title || memo.content.substring(0, 50)
-      const cleanTitle = removeDateExpression(originalTitle, dateInfo.text)
+      const cleanTitle = removeDateExpression(originalTitle)
 
       // Also clean description
-      const cleanDescription = removeDateExpression(memo.content, dateInfo.text)
+      const cleanDescription = removeDateExpression(memo.content)
 
       const res = await fetch('/api/events', {
         method: 'POST',
