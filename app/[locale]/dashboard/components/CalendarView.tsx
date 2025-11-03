@@ -725,7 +725,7 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
                   {/* Calendar Days */}
                   <div className="grid grid-cols-7 gap-2">
                     {getDaysInMonth().map((day, index) => {
-                      const isToday = day &&
+                      const isToday = !!day &&
                         new Date().toDateString() ===
                         new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString()
 
