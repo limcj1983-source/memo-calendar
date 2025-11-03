@@ -357,12 +357,27 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                 </svg>
-                                {new Date(dateInfo.startDate).toLocaleString('ko-KR', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
+                                {(() => {
+                                  // Parse ISO string directly to avoid timezone conversion
+                                  const isoDate = dateInfo.startDate
+                                  const match = isoDate.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/)
+                                  if (match) {
+                                    const [, year, month, day, hour, minute] = match
+                                    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute))
+                                    return date.toLocaleString('ko-KR', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })
+                                  }
+                                  return new Date(dateInfo.startDate).toLocaleString('ko-KR', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })
+                                })()}
                               </span>
                             </div>
                             <div className="relative group">
