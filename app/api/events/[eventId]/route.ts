@@ -3,6 +3,17 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+// Parse ISO string to Date without timezone conversion
+// Extracts local time parts and creates Date object
+function parseISOAsLocal(isoString: string): Date {
+  const match = isoString.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/)
+  if (match) {
+    const [, year, month, day, hour, minute, second] = match
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second))
+  }
+  return new Date(isoString)
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ eventId: string }> }
@@ -62,8 +73,8 @@ export async function PATCH(
       data: {
         title,
         description,
-        startDate: startDate ? new Date(startDate) : undefined,
-        endDate: endDate ? new Date(endDate) : null,
+        startDate: startDate ? parseISOAsLocal(startDate) : undefined,
+        endDate: endDate ? parseISOAsLocal(endDate) : null,
         allDay,
         calendarId
       },
