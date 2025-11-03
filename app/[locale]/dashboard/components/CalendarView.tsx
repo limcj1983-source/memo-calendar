@@ -95,12 +95,10 @@ function DraggableEvent({ event, onClick }: { event: Event; onClick: () => void 
     <div
       ref={setNodeRef}
       style={style}
-      className="text-xs p-1 rounded transition-opacity"
+      className="text-xs rounded transition-opacity"
     >
       <div
-        {...listeners}
-        {...attributes}
-        className="font-medium truncate px-1 py-0.5 rounded cursor-grab active:cursor-grabbing hover:opacity-80 relative group"
+        className="font-medium truncate px-1 py-0.5 rounded cursor-pointer hover:opacity-80 relative group flex items-center gap-1"
         style={{
           backgroundColor: event.calendar.color + '20',
           borderLeft: `3px solid ${event.calendar.color}`
@@ -110,8 +108,15 @@ function DraggableEvent({ event, onClick }: { event: Event; onClick: () => void 
           onClick()
         }}
       >
-        {event.title}
-        <span className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 text-gray-400 text-xs pr-1">⋮⋮</span>
+        <span
+          {...listeners}
+          {...attributes}
+          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 px-1 flex-shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          ⋮⋮
+        </span>
+        <span className="truncate flex-1">{event.title}</span>
       </div>
     </div>
   )
