@@ -2,12 +2,12 @@ import * as chrono from 'chrono-node'
 
 export interface ExtractedDate {
   text: string
-  startDate: string  // ISO string without timezone
-  endDate?: string   // ISO string without timezone
+  startDate: string  // ISO string with timezone (e.g., 2024-11-04T11:30:00+09:00)
+  endDate?: string   // ISO string with timezone (e.g., 2024-11-04T11:30:00+09:00)
   index: number
 }
 
-// Helper to convert Date to ISO string without timezone (YYYY-MM-DDTHH:mm:ss)
+// Helper to convert Date to ISO string with timezone (YYYY-MM-DDTHH:mm:ss+09:00)
 function dateToLocalISO(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -16,7 +16,13 @@ function dateToLocalISO(date: Date): string {
   const minute = String(date.getMinutes()).padStart(2, '0')
   const second = String(date.getSeconds()).padStart(2, '0')
 
-  return `${year}-${month}-${day}T${hour}:${minute}:${second}`
+  // Get timezone offset in minutes
+  const timezoneOffset = -date.getTimezoneOffset()
+  const offsetHours = String(Math.floor(Math.abs(timezoneOffset) / 60)).padStart(2, '0')
+  const offsetMinutes = String(Math.abs(timezoneOffset) % 60).padStart(2, '0')
+  const offsetSign = timezoneOffset >= 0 ? '+' : '-'
+
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}${offsetSign}${offsetHours}:${offsetMinutes}`
 }
 
 function parseKoreanDate(text: string): ExtractedDate[] {
