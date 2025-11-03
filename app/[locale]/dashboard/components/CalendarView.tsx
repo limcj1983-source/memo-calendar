@@ -3,6 +3,32 @@
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 
+// Helper function to parse ISO date without timezone conversion
+function parseISOWithoutTimezone(isoString: string): Date {
+  const match = isoString.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/)
+  if (match) {
+    const [, year, month, day, hour, minute, second] = match
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second))
+  }
+  return new Date(isoString)
+}
+
+// Helper function to format date for datetime-local input (YYYY-MM-DDTHH:mm)
+function formatForDatetimeLocal(isoString: string): string {
+  const match = isoString.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/)
+  if (match) {
+    return `${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}`
+  }
+  // Fallback: parse and format
+  const date = parseISOWithoutTimezone(isoString)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hour = String(date.getHours()).padStart(2, '0')
+  const minute = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hour}:${minute}`
+}
+
 interface Calendar {
   id: string
   name: string
@@ -253,8 +279,8 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
     setEditEvent({
       title: event.title,
       description: event.description || '',
-      startDate: new Date(event.startDate).toISOString().slice(0, 16),
-      endDate: event.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : '',
+      startDate: formatForDatetimeLocal(event.startDate),
+      endDate: event.endDate ? formatForDatetimeLocal(event.endDate) : '',
       calendarId: event.calendar.id
     })
   }
@@ -268,8 +294,8 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
       setEditEvent({
         title: selectedEvent.title,
         description: selectedEvent.description || '',
-        startDate: new Date(selectedEvent.startDate).toISOString().slice(0, 16),
-        endDate: selectedEvent.endDate ? new Date(selectedEvent.endDate).toISOString().slice(0, 16) : '',
+        startDate: formatForDatetimeLocal(selectedEvent.startDate),
+        endDate: selectedEvent.endDate ? formatForDatetimeLocal(selectedEvent.endDate) : '',
         calendarId: selectedEvent.calendar.id
       })
     }
@@ -620,7 +646,7 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
                                 >
                                   <div className="font-medium truncate">{event.title}</div>
                                   <div className="text-xs text-gray-600">
-                                    {new Date(event.startDate).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                                    {parseISOWithoutTimezone(event.startDate).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
                                   </div>
                                 </div>
                               ))}
@@ -653,8 +679,8 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
                             >
                               <div className="font-semibold">{event.title}</div>
                               <div className="text-sm text-gray-600">
-                                {new Date(event.startDate).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                                {event.endDate && ` - ${new Date(event.endDate).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`}
+                                {parseISOWithoutTimezone(event.startDate).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                                {event.endDate && ` - ${parseISOWithoutTimezone(event.endDate).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`}
                               </div>
                               {event.description && (
                                 <div className="text-sm text-gray-500 mt-1">{event.description}</div>
@@ -905,7 +931,7 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
                   <div className="flex items-start gap-2 text-sm">
                     <span className="font-medium text-gray-600 w-16">Start:</span>
                     <span className="text-gray-800">
-                      {new Date(selectedEvent.startDate).toLocaleString('ko-KR', {
+                      {parseISOWithoutTimezone(selectedEvent.startDate).toLocaleString('ko-KR', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',
@@ -918,7 +944,7 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
                     <div className="flex items-start gap-2 text-sm">
                       <span className="font-medium text-gray-600 w-16">End:</span>
                       <span className="text-gray-800">
-                        {new Date(selectedEvent.endDate).toLocaleString('ko-KR', {
+                        {parseISOWithoutTimezone(selectedEvent.endDate).toLocaleString('ko-KR', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',
