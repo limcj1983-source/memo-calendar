@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
+import { DndContext, DragEndEvent, useDraggable, useDroppable } from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
 
 // Helper function to parse ISO date without timezone conversion
 function parseISOWithoutTimezone(isoString: string): Date {
@@ -76,6 +78,95 @@ interface CalendarViewProps {
 }
 
 type ViewMode = 'month' | 'week' | 'day'
+
+// Draggable Event Component
+function DraggableEvent({ event, onClick }: { event: Event; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: event.id,
+    data: { event }
+  })
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+    cursor: isDragging ? 'grabbing' : 'grab'
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className="text-xs p-1 rounded hover:opacity-80 transition-opacity"
+      onClick={(e) => {
+        if (!isDragging) {
+          e.stopPropagation()
+          onClick()
+        }
+      }}
+    >
+      <div
+        className="font-medium truncate px-1 py-0.5 rounded"
+        style={{
+          backgroundColor: event.calendar.color + '20',
+          borderLeft: `3px solid ${event.calendar.color}`
+        }}
+      >
+        {event.title}
+      </div>
+    </div>
+  )
+}
+
+// Droppable Day Cell Component
+function DroppableDay({
+  day,
+  isToday,
+  events,
+  currentDate,
+  onEventClick
+}: {
+  day: number | null
+  isToday: boolean
+  events: Event[]
+  currentDate: Date
+  onEventClick: (event: Event) => void
+}) {
+  const dropId = day ? `${currentDate.getFullYear()}-${currentDate.getMonth()}-${day}` : 'empty'
+  const { setNodeRef, isOver } = useDroppable({
+    id: dropId,
+    data: { day, year: currentDate.getFullYear(), month: currentDate.getMonth() }
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`min-h-[100px] border rounded-lg p-2 transition-colors ${
+        day ? 'bg-white hover:bg-gray-50' : 'bg-gray-50'
+      } ${isToday ? 'border-blue-500 border-2' : 'border-gray-200'} ${
+        isOver ? 'bg-blue-50 border-blue-400' : ''
+      }`}
+    >
+      {day && (
+        <>
+          <div
+            className={`text-sm font-semibold mb-1 ${
+              isToday ? 'text-blue-600' : 'text-gray-700'
+            }`}
+          >
+            {day}
+          </div>
+          <div className="space-y-1">
+            {events.map((event) => (
+              <DraggableEvent key={event.id} event={event} onClick={() => onEventClick(event)} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 export default function CalendarView({ refreshKey }: CalendarViewProps) {
   const t = useTranslations('calendar')
@@ -300,6 +391,74 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
       })
     }
     setIsEditingEvent(false)
+  }
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (!over || !active.data.current?.event) return
+
+    const draggedEvent = active.data.current.event as Event
+    const dropData = over.data.current
+
+    if (!dropData || !dropData.day) return
+
+    // Get the new date from drop location
+    const newYear = dropData.year
+    const newMonth = dropData.month
+    const newDay = dropData.day
+
+    // Parse the original event date to keep the time
+    const originalDate = parseISOWithoutTimezone(draggedEvent.startDate)
+    const originalHour = originalDate.getHours()
+    const originalMinute = originalDate.getMinutes()
+
+    // Create new date with same time but new day
+    const newStartDate = new Date(newYear, newMonth, newDay, originalHour, originalMinute)
+
+    // Calculate duration if there's an end date
+    let newEndDate = null
+    if (draggedEvent.endDate) {
+      const originalEndDate = parseISOWithoutTimezone(draggedEvent.endDate)
+      const duration = originalEndDate.getTime() - originalDate.getTime()
+      newEndDate = new Date(newStartDate.getTime() + duration)
+    }
+
+    // Format dates for API
+    const formatForAPI = (date: Date) => {
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      const hour = String(date.getHours()).padStart(2, '0')
+      const minute = String(date.getMinutes()).padStart(2, '0')
+      const second = String(date.getSeconds()).padStart(2, '0')
+      const timezoneOffset = -date.getTimezoneOffset()
+      const offsetHours = String(Math.floor(Math.abs(timezoneOffset) / 60)).padStart(2, '0')
+      const offsetMinutes = String(Math.abs(timezoneOffset) % 60).padStart(2, '0')
+      const offsetSign = timezoneOffset >= 0 ? '+' : '-'
+      return `${year}-${month}-${day}T${hour}:${minute}:${second}${offsetSign}${offsetHours}:${offsetMinutes}`
+    }
+
+    try {
+      const res = await fetch(`/api/events/${draggedEvent.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: draggedEvent.title,
+          description: draggedEvent.description,
+          startDate: formatForAPI(newStartDate),
+          endDate: newEndDate ? formatForAPI(newEndDate) : null,
+          calendarId: draggedEvent.calendar.id
+        })
+      })
+
+      if (res.ok) {
+        const updatedEvent = await res.json()
+        setEvents(prevEvents => prevEvents.map(e => e.id === draggedEvent.id ? updatedEvent : e))
+      }
+    } catch (error) {
+      console.error('Failed to update event:', error)
+    }
   }
 
   const getDaysInMonth = () => {
@@ -553,7 +712,7 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
             <div className="p-4">
               {/* Month View */}
               {viewMode === 'month' && (
-                <>
+                <DndContext onDragEnd={handleDragEnd}>
                   {/* Day Labels */}
                   <div className="grid grid-cols-7 gap-2 mb-2">
                     {['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map(day => (
@@ -571,38 +730,18 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
                         new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString()
 
                       return (
-                        <div
+                        <DroppableDay
                           key={index}
-                          className={`min-h-[100px] border rounded-lg p-2 ${
-                            day ? 'bg-white hover:bg-gray-50' : 'bg-gray-50'
-                          } ${isToday ? 'border-blue-500 border-2' : 'border-gray-200'}`}
-                        >
-                          {day && (
-                            <>
-                              <div className={`text-sm font-semibold mb-1 ${
-                                isToday ? 'text-blue-600' : 'text-gray-700'
-                              }`}>
-                                {day}
-                              </div>
-                              <div className="space-y-1">
-                                {getEventsForDay(day).map(event => (
-                                  <div
-                                    key={event.id}
-                                    className="text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity"
-                                    style={{ backgroundColor: event.calendar.color + '20', borderLeft: `3px solid ${event.calendar.color}` }}
-                                    onClick={() => handleEventClick(event)}
-                                  >
-                                    <div className="font-medium truncate">{event.title}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </>
-                          )}
-                        </div>
+                          day={day}
+                          isToday={isToday}
+                          events={day ? getEventsForDay(day) : []}
+                          currentDate={currentDate}
+                          onEventClick={handleEventClick}
+                        />
                       )
                     })}
                   </div>
-                </>
+                </DndContext>
               )}
 
               {/* Week View */}
