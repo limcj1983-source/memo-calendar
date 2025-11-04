@@ -128,13 +128,15 @@ function DroppableDay({
   isToday,
   events,
   currentDate,
-  onEventClick
+  onEventClick,
+  onDayClick
 }: {
   day: number | null
   isToday: boolean
   events: Event[]
   currentDate: Date
   onEventClick: (event: Event) => void
+  onDayClick: (date: Date) => void
 }) {
   const dropId = day ? `${currentDate.getFullYear()}-${currentDate.getMonth()}-${day}` : 'empty'
   const { setNodeRef, isOver } = useDroppable({
@@ -146,10 +148,16 @@ function DroppableDay({
     <div
       ref={setNodeRef}
       className={`min-h-[60px] sm:min-h-[80px] md:min-h-[100px] border rounded-lg p-1 sm:p-2 transition-all duration-200 ${
-        day ? 'bg-white hover:bg-gray-50' : 'bg-gray-50'
+        day ? 'bg-white hover:bg-gray-50 cursor-pointer' : 'bg-gray-50'
       } ${isToday ? 'border-blue-500 border-2' : 'border-gray-200'} ${
         isOver && day ? 'bg-blue-100 border-blue-500 border-2 shadow-lg scale-105' : ''
       }`}
+      onClick={() => {
+        if (day) {
+          const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
+          onDayClick(clickedDate)
+        }
+      }}
     >
       {day && (
         <>
@@ -182,6 +190,8 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [isEditingEvent, setIsEditingEvent] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [showDayEventsModal, setShowDayEventsModal] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [newCalendar, setNewCalendar] = useState({
     name: '',
     description: '',
@@ -565,6 +575,33 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
     }
   }
 
+  const handleDayClick = (date: Date) => {
+    setSelectedDate(date)
+    setShowDayEventsModal(true)
+  }
+
+  const getEventsForSelectedDate = () => {
+    if (!selectedDate) return []
+    return events
+      .filter(event => {
+        const eventDate = new Date(event.startDate)
+        return eventDate.toDateString() === selectedDate.toDateString() &&
+               calendars.find(c => c.id === event.calendar.id)?.isVisible
+      })
+      .sort((a, b) => {
+        const timeA = parseISOWithoutTimezone(a.startDate).getTime()
+        const timeB = parseISOWithoutTimezone(b.startDate).getTime()
+        return timeA - timeB
+      })
+  }
+
+  const navigateSelectedDate = (direction: 'prev' | 'next') => {
+    if (!selectedDate) return
+    const newDate = new Date(selectedDate)
+    newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1))
+    setSelectedDate(newDate)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -758,6 +795,7 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
                           events={day ? getEventsForDay(day) : []}
                           currentDate={currentDate}
                           onEventClick={handleEventClick}
+                          onDayClick={handleDayClick}
                         />
                       )
                     })}
@@ -1141,6 +1179,111 @@ export default function CalendarView({ refreshKey }: CalendarViewProps) {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Day Events Modal */}
+      {showDayEventsModal && selectedDate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowDayEventsModal(false)}>
+          <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Header with date navigation */}
+            <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-between">
+              <button
+                onClick={() => navigateSelectedDate('prev')}
+                className="p-2 hover:bg-white rounded-lg text-gray-700 hover:text-blue-600 transition-all touch-manipulation"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              <div className="text-center">
+                <h3 className="text-lg font-bold text-gray-800">
+                  {selectedDate.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {selectedDate.toLocaleDateString('ko-KR', { weekday: 'long' })}
+                </p>
+              </div>
+
+              <button
+                onClick={() => navigateSelectedDate('next')}
+                className="p-2 hover:bg-white rounded-lg text-gray-700 hover:text-blue-600 transition-all touch-manipulation"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Events list */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {getEventsForSelectedDate().length > 0 ? (
+                <div className="space-y-3">
+                  {getEventsForSelectedDate().map((event) => (
+                    <div
+                      key={event.id}
+                      className="p-3 rounded-lg border-l-4 bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      style={{ borderLeftColor: event.calendar.color }}
+                      onClick={() => {
+                        setShowDayEventsModal(false)
+                        handleEventClick(event)
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-gray-800 truncate">{event.title}</h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div
+                              className="w-3 h-3 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: event.calendar.color }}
+                            />
+                            <span className="text-sm text-gray-600">{event.calendar.name}</span>
+                          </div>
+                          <div className="text-sm text-gray-500 mt-1">
+                            {parseISOWithoutTimezone(event.startDate).toLocaleTimeString('ko-KR', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                            {event.endDate && (
+                              <> - {parseISOWithoutTimezone(event.endDate).toLocaleTimeString('ko-KR', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}</>
+                            )}
+                          </div>
+                          {event.description && (
+                            <p className="text-sm text-gray-600 mt-2 line-clamp-2">{event.description}</p>
+                          )}
+                        </div>
+                        <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-gray-500 font-medium">No events on this day</p>
+                  <p className="text-sm text-gray-400 mt-1">Click "Event" to add one</p>
+                </div>
+              )}
+            </div>
+
+            {/* Close button */}
+            <div className="p-4 border-t">
+              <button
+                onClick={() => setShowDayEventsModal(false)}
+                className="w-full px-4 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 active:bg-gray-400 font-medium text-base touch-manipulation"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
