@@ -74,7 +74,7 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { title, content } = body
+    const { title, content, color } = body
 
     const existingMemo = await prisma.memo.findUnique({
       where: {
@@ -98,6 +98,7 @@ export async function PATCH(
       data: {
         title,
         content,
+        color: color || existingMemo.color,
         hasDate: hasDates,
         extractedDates: hasDates ? (extractedDates as any) : undefined
       },

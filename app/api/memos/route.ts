@@ -64,7 +64,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { title, content } = body
+    const { title, content, color } = body
 
     if (!content) {
       return new NextResponse('Content is required', { status: 400 })
@@ -84,6 +84,7 @@ export async function POST(request: Request) {
       data: {
         title,
         content,
+        color: color || '#fef08a',
         userId: user.id,
         hasDate: hasDates,
         extractedDates: hasDates ? (extractedDates as any) : undefined
