@@ -69,6 +69,7 @@ model Memo {
   id          String   @id @default(cuid())
   title       String?
   content     String   @db.Text
+  color       String   @default("#fef08a") // Post-it yellow default
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   hasDate     Boolean  @default(false)

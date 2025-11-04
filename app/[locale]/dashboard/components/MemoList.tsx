@@ -13,6 +13,7 @@ interface Memo {
   id: string
   title?: string
   content: string
+  color: string
   hasDate: boolean
   extractedDates?: ExtractedDate[]
   createdAt: string
@@ -30,14 +31,23 @@ interface MemoListProps {
   onEventAdded?: () => void
 }
 
+const MEMO_COLORS = [
+  { name: 'Yellow', value: '#fef08a', light: '#fefce8' },      // 클래식 포스트잇
+  { name: 'Pink', value: '#fecdd3', light: '#fce7f3' },        // 연핑크
+  { name: 'Blue', value: '#bfdbfe', light: '#dbeafe' },        // 하늘색
+  { name: 'Green', value: '#bbf7d0', light: '#dcfce7' },       // 민트색
+  { name: 'Purple', value: '#e9d5ff', light: '#f3e8ff' },      // 라벤더
+  { name: 'Orange', value: '#fed7aa', light: '#ffedd5' },      // 살구색
+]
+
 export default function MemoList({ onEventAdded }: MemoListProps) {
   const [memos, setMemos] = useState<Memo[]>([])
   const [calendars, setCalendars] = useState<Calendar[]>([])
   const [loading, setLoading] = useState(true)
   const [showNewMemo, setShowNewMemo] = useState(false)
-  const [newMemo, setNewMemo] = useState({ title: '', content: '' })
+  const [newMemo, setNewMemo] = useState({ title: '', content: '', color: MEMO_COLORS[0].value })
   const [editingMemo, setEditingMemo] = useState<string | null>(null)
-  const [editContent, setEditContent] = useState({ title: '', content: '' })
+  const [editContent, setEditContent] = useState({ title: '', content: '', color: MEMO_COLORS[0].value })
   const [searchQuery, setSearchQuery] = useState('')
   const [filterByDate, setFilterByDate] = useState(false)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
@@ -87,7 +97,7 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
       if (res.ok) {
         const memo = await res.json()
         setMemos(prevMemos => [memo, ...prevMemos])
-        setNewMemo({ title: '', content: '' })
+        setNewMemo({ title: '', content: '', color: MEMO_COLORS[0].value })
         setShowNewMemo(false)
       }
     } catch (error) {
@@ -132,6 +142,17 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
     } catch (error) {
       console.error('Failed to delete memo:', error)
     }
+  }
+
+  // Format date simply: 11.7 14:10
+  const formatDateSimple = (isoString: string): string => {
+    const match = isoString.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/)
+    if (match) {
+      const [, , month, day, hour, minute] = match
+      return `${parseInt(month)}.${parseInt(day)} ${hour}:${minute}`
+    }
+    const date = new Date(isoString)
+    return `${date.getMonth() + 1}.${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
   }
 
   // Remove only date expression, keep time
@@ -273,6 +294,28 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
             </svg>
             <h3 className="text-sm sm:text-base font-semibold text-gray-800">New Memo</h3>
           </div>
+
+          {/* Color Selection */}
+          <div className="mb-3">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Color</label>
+            <div className="flex gap-2 flex-wrap">
+              {MEMO_COLORS.map((colorOption) => (
+                <button
+                  key={colorOption.value}
+                  type="button"
+                  onClick={() => setNewMemo({ ...newMemo, color: colorOption.value })}
+                  className={`w-10 h-10 rounded-lg transition-all ${
+                    newMemo.color === colorOption.value
+                      ? 'ring-2 ring-blue-500 ring-offset-2 scale-110'
+                      : 'hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: colorOption.value }}
+                  title={colorOption.name}
+                />
+              ))}
+            </div>
+          </div>
+
           <input
             type="text"
             placeholder="Title (optional)"
@@ -296,7 +339,7 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
             <button
               onClick={() => {
                 setShowNewMemo(false)
-                setNewMemo({ title: '', content: '' })
+                setNewMemo({ title: '', content: '', color: MEMO_COLORS[0].value })
               }}
               className="px-3 sm:px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 active:bg-gray-300 text-sm sm:text-base font-medium transition-colors touch-manipulation"
             >
@@ -318,30 +361,61 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
           </div>
         ) : (
           filteredMemos.map((memo) => (
-            <div key={memo.id} className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-lg transition-all hover:border-blue-300 group">
+            <div
+              key={memo.id}
+              className="relative rounded-lg shadow-md hover:shadow-xl transition-all transform hover:-translate-y-1 p-4 sm:p-5"
+              style={{
+                backgroundColor: memo.color,
+                backgroundImage: `
+                  linear-gradient(to bottom, ${memo.color} 0%, ${memo.color} 100%),
+                  linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px)
+                `,
+                backgroundSize: '100% 100%, 100% 1.5em',
+                backgroundPosition: '0 0, 0 0.2em'
+              }}
+            >
               {editingMemo === memo.id ? (
                 <div>
+                  {/* Color Selection in Edit Mode */}
+                  <div className="mb-2">
+                    <div className="flex gap-1.5">
+                      {MEMO_COLORS.map((colorOption) => (
+                        <button
+                          key={colorOption.value}
+                          type="button"
+                          onClick={() => setEditContent({ ...editContent, color: colorOption.value })}
+                          className={`w-7 h-7 rounded transition-all ${
+                            editContent.color === colorOption.value
+                              ? 'ring-2 ring-gray-800 ring-offset-1'
+                              : ''
+                          }`}
+                          style={{ backgroundColor: colorOption.value }}
+                        />
+                      ))}
+                    </div>
+                  </div>
                   <input
                     type="text"
                     value={editContent.title}
                     onChange={(e) => setEditContent({ ...editContent, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Title (optional)"
+                    className="w-full px-3 py-2 border-none rounded-lg mb-2 text-base focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white/60"
                   />
                   <textarea
                     value={editContent.content}
                     onChange={(e) => setEditContent({ ...editContent, content: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2 h-32 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border-none rounded-lg mb-2 h-32 text-base focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white/60 resize-none"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={() => updateMemo(memo.id)}
-                      className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 text-sm font-medium touch-manipulation"
+                      className="flex-1 sm:flex-none px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 text-sm font-medium touch-manipulation"
                     >
                       Save
                     </button>
                     <button
                       onClick={() => setEditingMemo(null)}
-                      className="flex-1 sm:flex-none px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 active:bg-gray-500 text-sm font-medium touch-manipulation"
+                      className="flex-1 sm:flex-none px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 text-sm font-medium touch-manipulation"
                     >
                       Cancel
                     </button>
@@ -350,76 +424,32 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
               ) : (
                 <div>
                   {memo.title && (
-                    <h3 className="font-bold text-base sm:text-lg mb-2 text-gray-800 flex items-center gap-2">
-                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                      </svg>
+                    <h3 className="font-bold text-base sm:text-lg mb-2 text-gray-900">
                       {memo.title}
                     </h3>
                   )}
-                  <p className="text-sm sm:text-base text-gray-700 whitespace-pre-wrap mb-3 leading-relaxed">{memo.content}</p>
+                  <p className="text-sm sm:text-base text-gray-800 whitespace-pre-wrap leading-relaxed">{memo.content}</p>
 
-                  {/* Date Detection */}
+                  {/* Inline Date Display */}
                   {memo.hasDate && memo.extractedDates && memo.extractedDates.length > 0 && (
-                    <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
-                      <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <p className="text-xs sm:text-sm font-semibold text-blue-900">
-                          Dates detected
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        {memo.extractedDates.map((dateInfo, idx) => {
-                          const dropdownId = `${memo.id}-${idx}`
-                          return (
-                          <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between bg-white p-2.5 sm:p-3 rounded-lg border border-blue-100 hover:border-blue-300 transition-colors">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                                  "{dateInfo.text}"
-                                </span>
-                              </div>
-                              <span className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
-                                <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                </svg>
-                                {(() => {
-                                  // Parse ISO string directly to avoid timezone conversion
-                                  const isoDate = dateInfo.startDate
-                                  const match = isoDate.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/)
-                                  if (match) {
-                                    const [, year, month, day, hour, minute] = match
-                                    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute))
-                                    return date.toLocaleString('ko-KR', {
-                                      month: 'short',
-                                      day: 'numeric',
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    })
-                                  }
-                                  return new Date(dateInfo.startDate).toLocaleString('ko-KR', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })
-                                })()}
-                              </span>
-                            </div>
+                    <div className="mt-2 space-y-1">
+                      {memo.extractedDates.map((dateInfo, idx) => {
+                        const dropdownId = `${memo.id}-${idx}`
+                        return (
+                          <div key={idx} className="flex items-center gap-2">
+                            <span className="text-xs text-gray-600 font-mono">
+                              📅 {formatDateSimple(dateInfo.startDate)}
+                            </span>
                             <div className="relative">
                               <button
                                 onClick={() => setOpenDropdown(openDropdown === dropdownId ? null : dropdownId)}
-                                className="w-full sm:w-auto px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs sm:text-sm hover:from-blue-700 hover:to-indigo-700 active:from-blue-800 active:to-indigo-800 font-medium shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-1 touch-manipulation"
+                                className="text-xs px-2 py-0.5 bg-gray-800/80 text-white rounded hover:bg-gray-900 transition-colors touch-manipulation"
+                                title="Add to calendar"
                               >
-                                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                </svg>
-                                Add to Calendar
+                                +
                               </button>
                               {openDropdown === dropdownId && (
-                                <div className="absolute right-0 mt-2 w-full sm:w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-10 overflow-hidden">
+                                <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-10 overflow-hidden">
                                   {calendars.map((cal) => (
                                     <button
                                       key={cal.id}
@@ -427,7 +457,7 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
                                         addToCalendar(memo, dateInfo, cal.id)
                                         setOpenDropdown(null)
                                       }}
-                                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 active:bg-gray-100 flex items-center gap-2 transition-colors first:pt-3 last:pb-3 touch-manipulation"
+                                      className="w-full text-left px-3 py-2 hover:bg-gray-50 active:bg-gray-100 flex items-center gap-2 transition-colors touch-manipulation"
                                     >
                                       <span
                                         className="w-3 h-3 rounded-full ring-2 ring-white shadow-sm flex-shrink-0"
@@ -437,7 +467,7 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
                                     </button>
                                   ))}
                                   {calendars.length === 0 && (
-                                    <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                                    <div className="px-3 py-2 text-xs text-gray-500 text-center">
                                       No calendars yet
                                     </div>
                                   )}
@@ -445,9 +475,8 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
                               )}
                             </div>
                           </div>
-                        )}
-                        )}
-                      </div>
+                        )
+                      })}
                     </div>
                   )}
 
@@ -456,7 +485,7 @@ export default function MemoList({ onEventAdded }: MemoListProps) {
                       <button
                         onClick={() => {
                           setEditingMemo(memo.id)
-                          setEditContent({ title: memo.title || '', content: memo.content })
+                          setEditContent({ title: memo.title || '', content: memo.content, color: memo.color })
                         }}
                         className="flex-1 sm:flex-none px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs sm:text-sm hover:bg-gray-200 active:bg-gray-300 font-medium transition-colors flex items-center justify-center gap-1 touch-manipulation"
                       >
